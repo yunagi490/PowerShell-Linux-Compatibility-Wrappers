@@ -412,5 +412,44 @@ function systemctl {
         default {
             Write-Host "systemctl: Unknown command '$Command'"
         }
+        
+        # --------------------------------------------------------
+        # systemctl is-enabled
+        # --------------------------------------------------------
+        "is-enabled" {
+            if ($Arguments.Count -eq 0) {
+                Write-Host "Usage: systemctl is-enabled <service>"
+                return
+            }
+        
+            $serviceName = $Arguments[0]
+        
+            $service = Get-CimInstance Win32_Service `
+                -Filter "Name='$serviceName'" `
+                -ErrorAction SilentlyContinue
+        
+            if (-not $service) {
+                Write-Host "not-found"
+                return
+            }
+        
+            switch ($service.StartMode) {
+                "Auto" {
+                    Write-Host "enabled"
+                }
+            
+                "Disabled" {
+                    Write-Host "disabled"
+                }
+            
+                "Manual" {
+                    Write-Host "static"
+                }
+            
+                default {
+                    Write-Host "unknown"
+                }
+            }
+        }
     }
 }
