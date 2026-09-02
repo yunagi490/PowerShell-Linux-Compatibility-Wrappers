@@ -209,6 +209,7 @@ function systemctl {
         Write-Host "  enable <service>      Enable service at startup"
         Write-Host "  disable <service>     Disable service at startup"
         Write-Host "  is-active <service>   Check whether service is active"
+        Write-Host "  is-enabled <service>  Check whether service is enabled"
         Write-Host "  list-units            List services"
         return
     }
