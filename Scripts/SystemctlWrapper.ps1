@@ -233,8 +233,8 @@ function systemctl {
             }
 
             $startupType = (Get-CimInstance Win32_Service `
-                -Filter "Name='$($service.Name)'" `
-                -ErrorAction SilentlyContinue
+                    -Filter "Name='$($service.Name)'" `
+                    -ErrorAction SilentlyContinue
             ).StartMode
 
             $activeState = if ($service.Status -eq "Running") {
@@ -286,91 +286,91 @@ function systemctl {
             Restart-Service -Name $Arguments[0]
         }
 
-# --------------------------------------------------------
-# systemctl enable [--now] <service>
-# --------------------------------------------------------
-"enable" {
-    if ($Arguments.Count -eq 0) {
-        Write-Host "Usage: systemctl enable [--now] <service>"
-        return
-    }
+        # --------------------------------------------------------
+        # systemctl enable [--now] <service>
+        # --------------------------------------------------------
+        "enable" {
+            if ($Arguments.Count -eq 0) {
+                Write-Host "Usage: systemctl enable [--now] <service>"
+                return
+            }
 
-    $now = $Arguments -contains "--now"
+            $now = $Arguments -contains "--now"
 
-    $serviceArgs = @(
-        $Arguments | Where-Object {
-            $_ -ne "--now"
-        }
-    )
+            $serviceArgs = @(
+                $Arguments | Where-Object {
+                    $_ -ne "--now"
+                }
+            )
 
-    if ($serviceArgs.Count -eq 0) {
-        Write-Host "Usage: systemctl enable [--now] <service>"
-        return
-    }
+            if ($serviceArgs.Count -eq 0) {
+                Write-Host "Usage: systemctl enable [--now] <service>"
+                return
+            }
 
-    $serviceName = $serviceArgs[0]
+            $serviceName = $serviceArgs[0]
 
-    try {
-        Set-Service `
-            -Name $serviceName `
-            -StartupType Automatic `
-            -ErrorAction Stop
+            try {
+                Set-Service `
+                    -Name $serviceName `
+                    -StartupType Automatic `
+                    -ErrorAction Stop
 
-        Write-Host "Created symlink /etc/systemd/system/multi-user.target.wants/$serviceName.service"
+                Write-Host "Created symlink /etc/systemd/system/multi-user.target.wants/$serviceName.service"
 
-        if ($now) {
-            Start-Service `
-                -Name $serviceName `
-                -ErrorAction Stop
-        }
-    }
-    catch {
-        Write-Host "Failed to enable unit: $($_.Exception.Message)"
-    }
-}
-
-# --------------------------------------------------------
-# systemctl disable [--now] <service>
-# --------------------------------------------------------
-"disable" {
-    if ($Arguments.Count -eq 0) {
-        Write-Host "Usage: systemctl disable [--now] <service>"
-        return
-    }
-
-    $now = $Arguments -contains "--now"
-
-    $serviceArgs = @(
-        $Arguments | Where-Object {
-            $_ -ne "--now"
-        }
-    )
-
-    if ($serviceArgs.Count -eq 0) {
-        Write-Host "Usage: systemctl disable [--now] <service>"
-        return
-    }
-
-    $serviceName = $serviceArgs[0]
-
-    try {
-        if ($now) {
-            Stop-Service `
-                -Name $serviceName `
-                -ErrorAction Stop
+                if ($now) {
+                    Start-Service `
+                        -Name $serviceName `
+                        -ErrorAction Stop
+                }
+            }
+            catch {
+                Write-Host "Failed to enable unit: $($_.Exception.Message)"
+            }
         }
 
-        Set-Service `
-            -Name $serviceName `
-            -StartupType Disabled `
-            -ErrorAction Stop
+        # --------------------------------------------------------
+        # systemctl disable [--now] <service>
+        # --------------------------------------------------------
+        "disable" {
+            if ($Arguments.Count -eq 0) {
+                Write-Host "Usage: systemctl disable [--now] <service>"
+                return
+            }
 
-        Write-Host "Removed /etc/systemd/system/multi-user.target.wants/$serviceName.service"
-    }
-    catch {
-        Write-Host "Failed to disable unit: $($_.Exception.Message)"
-    }
-}
+            $now = $Arguments -contains "--now"
+
+            $serviceArgs = @(
+                $Arguments | Where-Object {
+                    $_ -ne "--now"
+                }
+            )
+
+            if ($serviceArgs.Count -eq 0) {
+                Write-Host "Usage: systemctl disable [--now] <service>"
+                return
+            }
+
+            $serviceName = $serviceArgs[0]
+
+            try {
+                if ($now) {
+                    Stop-Service `
+                        -Name $serviceName `
+                        -ErrorAction Stop
+                }
+
+                Set-Service `
+                    -Name $serviceName `
+                    -StartupType Disabled `
+                    -ErrorAction Stop
+
+                Write-Host "Removed /etc/systemd/system/multi-user.target.wants/$serviceName.service"
+            }
+            catch {
+                Write-Host "Failed to disable unit: $($_.Exception.Message)"
+            }
+        }
         # --------------------------------------------------------
         # systemctl is-active
         # --------------------------------------------------------
@@ -385,16 +385,16 @@ function systemctl {
                 -ErrorAction SilentlyContinue
 
             if (-not $service) {
-                Write-Host "unknown"
+                Write-Output "unknown"
                 return
             }
 
             if ($service.Status -eq "Running") {
-                Write-Host "active"
+                Write-Output "active"
             }
             else {
-                Write-Host "inactive"
-            }
+                Write-Output "inactive"
+            }        
         }
 
         # --------------------------------------------------------
@@ -402,12 +402,12 @@ function systemctl {
         # --------------------------------------------------------
         "list-units" {
             Get-Service |
-                Sort-Object Name |
-                Format-Table `
-                    Name,
-                    Status,
-                    DisplayName `
-                    -AutoSize
+            Sort-Object Name |
+            Format-Table `
+                Name,
+            Status,
+            DisplayName `
+                -AutoSize
         }
 
         default {
@@ -430,27 +430,27 @@ function systemctl {
                 -ErrorAction SilentlyContinue
         
             if (-not $service) {
-                Write-Host "not-found"
+                Write-Output "not-found"
                 return
             }
-        
+
             switch ($service.StartMode) {
                 "Auto" {
-                    Write-Host "enabled"
+                    Write-Output "enabled"
                 }
-            
+
                 "Disabled" {
-                    Write-Host "disabled"
+                    Write-Output "disabled"
                 }
-            
+
                 "Manual" {
-                    Write-Host "static"
+                    Write-Output "static"
                 }
-            
+
                 default {
-                    Write-Host "unknown"
+                    Write-Output "unknown"
                 }
-            }
+            }        
         }
     }
 }
