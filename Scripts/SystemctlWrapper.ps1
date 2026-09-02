@@ -285,34 +285,91 @@ function systemctl {
             Restart-Service -Name $Arguments[0]
         }
 
-        # --------------------------------------------------------
-        # systemctl enable
-        # --------------------------------------------------------
-        "enable" {
-            if ($Arguments.Count -eq 0) {
-                Write-Host "Usage: systemctl enable <service>"
-                return
-            }
+# --------------------------------------------------------
+# systemctl enable [--now] <service>
+# --------------------------------------------------------
+"enable" {
+    if ($Arguments.Count -eq 0) {
+        Write-Host "Usage: systemctl enable [--now] <service>"
+        return
+    }
 
-            Set-Service `
-                -Name $Arguments[0] `
-                -StartupType Automatic
+    $now = $Arguments -contains "--now"
+
+    $serviceArgs = @(
+        $Arguments | Where-Object {
+            $_ -ne "--now"
+        }
+    )
+
+    if ($serviceArgs.Count -eq 0) {
+        Write-Host "Usage: systemctl enable [--now] <service>"
+        return
+    }
+
+    $serviceName = $serviceArgs[0]
+
+    try {
+        Set-Service `
+            -Name $serviceName `
+            -StartupType Automatic `
+            -ErrorAction Stop
+
+        Write-Host "Created symlink /etc/systemd/system/multi-user.target.wants/$serviceName.service"
+
+        if ($now) {
+            Start-Service `
+                -Name $serviceName `
+                -ErrorAction Stop
+        }
+    }
+    catch {
+        Write-Host "Failed to enable unit: $($_.Exception.Message)"
+    }
+}
+
+# --------------------------------------------------------
+# systemctl disable [--now] <service>
+# --------------------------------------------------------
+"disable" {
+    if ($Arguments.Count -eq 0) {
+        Write-Host "Usage: systemctl disable [--now] <service>"
+        return
+    }
+
+    $now = $Arguments -contains "--now"
+
+    $serviceArgs = @(
+        $Arguments | Where-Object {
+            $_ -ne "--now"
+        }
+    )
+
+    if ($serviceArgs.Count -eq 0) {
+        Write-Host "Usage: systemctl disable [--now] <service>"
+        return
+    }
+
+    $serviceName = $serviceArgs[0]
+
+    try {
+        if ($now) {
+            Stop-Service `
+                -Name $serviceName `
+                -ErrorAction Stop
         }
 
-        # --------------------------------------------------------
-        # systemctl disable
-        # --------------------------------------------------------
-        "disable" {
-            if ($Arguments.Count -eq 0) {
-                Write-Host "Usage: systemctl disable <service>"
-                return
-            }
+        Set-Service `
+            -Name $serviceName `
+            -StartupType Disabled `
+            -ErrorAction Stop
 
-            Set-Service `
-                -Name $Arguments[0] `
-                -StartupType Disabled
-        }
-
+        Write-Host "Removed /etc/systemd/system/multi-user.target.wants/$serviceName.service"
+    }
+    catch {
+        Write-Host "Failed to disable unit: $($_.Exception.Message)"
+    }
+}
         # --------------------------------------------------------
         # systemctl is-active
         # --------------------------------------------------------
