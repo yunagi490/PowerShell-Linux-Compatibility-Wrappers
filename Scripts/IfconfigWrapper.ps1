@@ -4,15 +4,8 @@
 # ============================================================
 
 function ifconfig {
-    param(
-        [Parameter(Position = 0)]
-        [string]$Interface,
+    $Interface = $args[0]
 
-        [Parameter(ValueFromRemainingArguments)]
-        [object[]]$Arguments
-    )
-
-    # ifconfig / ifconfig -a
     if (
         [string]::IsNullOrWhiteSpace($Interface) -or
         $Interface -eq "-a"
@@ -24,6 +17,22 @@ function ifconfig {
         Show-IfconfigLoopback
         return
     }
+
+    if ($Interface -eq "lo") {
+        Show-IfconfigLoopback
+        return
+    }
+
+    $adapter = Get-NetAdapter `
+        -Name $Interface `
+        -ErrorAction SilentlyContinue
+
+    if (-not $adapter) {
+        Write-Host "ifconfig: $Interface`: error fetching interface information: Device not found"
+        return
+    }
+
+    Show-IfconfigInterface $adapter
 
     # lo
     if ($Interface -eq "lo") {
