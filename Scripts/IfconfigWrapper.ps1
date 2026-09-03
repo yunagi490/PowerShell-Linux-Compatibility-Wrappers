@@ -2,7 +2,14 @@
 # ifconfig compatibility wrapper
 # Target: net-tools
 # ============================================================
+function Show-IfconfigLoopback {
 
+    Write-Output "lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536"
+    Write-Output "        inet 127.0.0.1  netmask 255.0.0.0"
+    Write-Output "        inet6 ::1  prefixlen 128  scopeid 0x10<host>"
+    Write-Output "        loop  txqueuelen 1000  (Local Loopback)"
+    Write-Output ""
+}
 function ifconfig {
     $Interface = $args[0]
 
