@@ -1,110 +1,169 @@
-<#
-============================================================
-Legacy implementation / Maintenance reference
-============================================================
-
-旧実装。
-動作比較・デバッグ・保守時の参照用として保持。
-現在使用している実装は下部の「第二版」。
-
-※ このブロックは実行されません。
-============================================================
-Legacy implementation / Maintenance reference
-============================================================
-BeforeAll {
-    . "$PSScriptRoot\..\Scripts\BrewWrapper.ps1"
-
-    Mock choco {}
-}
-
-Describe "BrewWrapper" {
-
-    It "brew install を choco install に変換する" {
-        brew install git
-
-        Should -Invoke choco -Times 1 -ParameterFilter {
-            $args -contains "install" -and
-            $args -contains "git"
-        }
-    }
-
-    It "brew uninstall を choco uninstall に変換する" {
-        brew uninstall git
-
-        Should -Invoke choco -Times 1 -ParameterFilter {
-            $args -contains "uninstall" -and
-            $args -contains "git"
-        }
-    }
-
-    It "brew upgrade を choco upgrade に変換する" {
-        brew upgrade git
-
-        Should -Invoke choco -Times 1 -ParameterFilter {
-            $args -contains "upgrade" -and
-            $args -contains "git"
-        }
-    }
-}
-#>
-## 第二版
 # ============================================================
-# brew compatibility wrapper
-# Backend: Chocolatey
+# BrewWrapper Tests
 # ============================================================
+#
+# 変更履歴:
+#   v0.1.0
+#     - 初版
+#     - install / uninstall / upgrade の基本動作をテスト
+#
+#   v0.1.1
+#     - Homebrew互換機能の拡張に対応
+#     - remove / search / list / info / outdated を追加
+#     - pin / unpin を追加
+#     - --prefix / --version を追加
+#     - 引数なし upgrade の全パッケージ更新を追加
+#
+# ============================================================
+Describe "brew wrapper" {
 
-function Invoke-BrewWrapper {
-    param(
-        [Parameter(Position = 0)]
-        [string]$Command,
+    BeforeAll {
+        . "$PSScriptRoot\..\Scripts\BrewWrapper.ps1"
 
-        [Parameter(ValueFromRemainingArguments)]
-        [object[]]$Arguments
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Command)) {
-        Write-Host "Usage: brew <command> [package]"
-        return
+        Mock choco {}
     }
 
-    switch ($Command) {
+    Context "install" {
 
-        "install" {
-            choco install @Arguments -y
-        }
+        It "installs a package using Chocolatey" {
+            brew install git
 
-        "uninstall" {
-            choco uninstall @Arguments -y
-        }
-
-        "remove" {
-            choco uninstall @Arguments -y
-        }
-
-        "upgrade" {
-            choco upgrade @Arguments -y
-        }
-
-        "--version" {
-            choco --version
-        }
-
-        default {
-            choco $Command @Arguments
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "install" -and
+                $args -contains "git" -and
+                $args -contains "-y"
+            }
         }
     }
-}
 
-function brew {
-    param(
-        [Parameter(Position = 0)]
-        [string]$Command,
+    Context "uninstall" {
 
-        [Parameter(ValueFromRemainingArguments)]
-        [object[]]$Arguments
-    )
+        It "uninstalls a package using Chocolatey" {
+            brew uninstall git
 
-    Invoke-BrewWrapper `
-        -Command $Command `
-        -Arguments $Arguments
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "uninstall" -and
+                $args -contains "git" -and
+                $args -contains "-y"
+            }
+        }
+
+        It "supports remove as an alias for uninstall" {
+            brew remove git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "uninstall" -and
+                $args -contains "git" -and
+                $args -contains "-y"
+            }
+        }
+    }
+
+    Context "upgrade" {
+
+        It "upgrades a specified package" {
+            brew upgrade git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "upgrade" -and
+                $args -contains "git" -and
+                $args -contains "-y"
+            }
+        }
+
+        It "upgrades all packages when no package is specified" {
+            brew upgrade
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "upgrade" -and
+                $args -contains "all" -and
+                $args -contains "-y"
+            }
+        }
+    }
+
+    Context "package information" {
+
+        It "searches for packages" {
+            brew search git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "search" -and
+                $args -contains "git"
+            }
+        }
+
+        It "lists installed packages" {
+            brew list
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "list"
+            }
+        }
+
+        It "shows package information" {
+            brew info git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "info" -and
+                $args -contains "git"
+            }
+        }
+
+        It "checks outdated packages" {
+            brew outdated
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "outdated"
+            }
+        }
+    }
+
+    Context "pin" {
+
+        It "pins a package" {
+            brew pin git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "pin" -and
+                $args -contains "add" -and
+                $args -contains "-n=git"
+            }
+        }
+
+        It "unpins a package" {
+            brew unpin git
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "pin" -and
+                $args -contains "remove" -and
+                $args -contains "-n=git"
+            }
+        }
+    }
+
+    Context "brew compatibility options" {
+
+        It "returns the Chocolatey installation prefix" {
+            $originalChocolateyInstall = $env:ChocolateyInstall
+
+            try {
+                $env:ChocolateyInstall = "C:\ProgramData\chocolatey"
+
+                brew --prefix |
+                Should -Be "C:\ProgramData\chocolatey"
+            }
+            finally {
+                $env:ChocolateyInstall = $originalChocolateyInstall
+            }
+        }
+
+        It "returns the Chocolatey version" {
+            brew --version
+
+            Should -Invoke choco -Times 1 -ParameterFilter {
+                $args -contains "--version"
+            }
+        }
+    }
 }
