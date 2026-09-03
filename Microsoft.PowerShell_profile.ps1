@@ -81,7 +81,11 @@ Legacy implementation / Maintenance reference
 
 # System command wrappers
 . "$PSScriptRoot\Scripts\IpWrapper.ps1"
+. "$PSScriptRoot\Scripts\IfconfigWrapper.ps1"
 . "$PSScriptRoot\Scripts\SystemctlWrapper.ps1"
 
 # sudo dispatcher
 . "$PSScriptRoot\Scripts\SudoWrapper.ps1"
+
+# Network common functions
+. "$PSScriptRoot\Scripts\Network\NetworkCommon.ps1"
