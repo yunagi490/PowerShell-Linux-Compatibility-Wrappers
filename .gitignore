@@ -1,0 +1,47 @@
+# ============================================================
+# PowerShell Linux Compatibility Wrappers
+# ============================================================
+
+# VS Code local settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/PSScriptAnalyzerSettings.psd1
+
+# Pester test results
+Tests/TestResults/
+TestResults/
+*.trx
+*.xml
+
+# PowerShell temporary / generated files
+*.tmp
+*.temp
+*.log
+
+# PowerShell history
+ConsoleHost_history.txt
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Backup files
+*.bak
+*.old
+*~
+
+# OneDrive conflict files
+*-DESKTOP-*
+*-conflicted copy*
+
+# ============================================================
+# Test results
+# ============================================================
+
+Tests/TestResults/
+TestResults/
+
+# Pester reports
+*.trx
+*.html
